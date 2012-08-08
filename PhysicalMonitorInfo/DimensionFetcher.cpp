@@ -43,31 +43,20 @@ namespace {
 
 	// Assumes hDevRegKey is valid
 	bool GetMonitorSizeFromEDID(const HKEY hDevRegKey, short& WidthMm, short& HeightMm) {
-		DWORD dwType, AcutalValueNameLength = NAME_SIZE;
-		TCHAR valueName[NAME_SIZE];
 
 		BYTE EDIDdata[1024];
 		DWORD edidsize = sizeof(EDIDdata);
 
-		for (LONG i = 0, retValue = ERROR_SUCCESS; retValue != ERROR_NO_MORE_ITEMS; ++i) {
-			retValue = RegEnumValue(hDevRegKey, i, &valueName[0],
-			                        &AcutalValueNameLength, NULL, &dwType,
-			                        EDIDdata, // buffer
-			                        &edidsize); // buffer size
-
-			if (retValue != ERROR_SUCCESS || 0 != _tcscmp(valueName, _T("EDID"))) {
-				continue;
-			}
-
-			WidthMm  = ((EDIDdata[68] & 0xF0) << 4) + EDIDdata[66];
-			HeightMm = ((EDIDdata[68] & 0x0F) << 8) + EDIDdata[67];
-
-			return true; // valid EDID found
+		LONG retValue = RegQueryValueEx(hDevRegKey, _T("EDID"), NULL, NULL,  EDIDdata, &edidsize);
+		if (retValue != ERROR_SUCCESS) {
+			return false;
 		}
 
-		return false; // EDID not found
-	}
+		WidthMm  = ((EDIDdata[68] & 0xF0) << 4) + EDIDdata[66];
+		HeightMm = ((EDIDdata[68] & 0x0F) << 8) + EDIDdata[67];
 
+		return true; // valid EDID found
+	}
 }
 
 bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm) {
