@@ -7,6 +7,7 @@
 #include <SetupApi.h>
 #pragma comment(lib, "setupapi.lib")
 
+#include "CStringHelpers.h"
 
 #include <iostream>
 
@@ -106,7 +107,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			{
 				DeviceID.Format (L"%s", ddMon.DeviceID);
 				DeviceID = DeviceID.Mid (8, DeviceID.Find (L"\\", 9) - 8);
-
+				std::cout << DeviceID << std::endl;
 				bFoundDevice = GetSizeForDevID(DeviceID, WidthMm, HeightMm);
 			}
 			devMon++;
