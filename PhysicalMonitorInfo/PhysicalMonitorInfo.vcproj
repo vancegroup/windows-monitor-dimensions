@@ -203,6 +203,10 @@
 					RelativePath=".\ScopedHandle\ScopedHandle.h"
 					>
 				</File>
+				<File
+					RelativePath=".\ScopedHandle\ScopedHandleSetupAPI.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
