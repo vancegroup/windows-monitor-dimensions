@@ -23,6 +23,7 @@
 // Internal Includes
 #include "DimensionFetcher.h"
 #include "ScopedHandle/ScopedHandle.h"
+#include "ScopedHandle/ScopedHandleSetupAPI.h"
 #include "WindowsStructTools.h"
 
 // Library/third-party includes
@@ -32,8 +33,6 @@
 
 // Standard includes
 // - none
-
-
 
 #define NAME_SIZE 128
 
@@ -70,16 +69,16 @@ namespace {
 }
 
 bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm) {
-	HDEVINFO devInfo = SetupDiGetClassDevsEx(
-	                       &GUID_CLASS_MONITOR, //class GUID
-	                       NULL, //enumerator
-	                       NULL, //HWND
-	                       DIGCF_PRESENT, // Flags //DIGCF_ALLCLASSES|
-	                       NULL, // device info, create a new one.
-	                       NULL, // machine name, local machine
-	                       NULL);// reserved
+	DevInfoScopedHandle devInfo(SetupDiGetClassDevsEx(
+	                                &GUID_CLASS_MONITOR, //class GUID
+	                                NULL, //enumerator
+	                                NULL, //HWND
+	                                DIGCF_PRESENT, // Flags //DIGCF_ALLCLASSES|
+	                                NULL, // device info, create a new one.
+	                                NULL, // machine name, local machine
+	                                NULL));// reserved
 
-	if (NULL == devInfo) {
+	if (!devInfo) {
 		return false;
 	}
 
@@ -89,20 +88,18 @@ bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm
 		SP_DEVINFO_DATA devInfoData;
 		initWinSizedStruct(devInfoData);
 
-		if (SetupDiEnumDeviceInfo(devInfo, i, &devInfoData)) {
-			HKEY hDevRegKey = SetupDiOpenDevRegKey(devInfo, &devInfoData,
-			                                       DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ);
+		if (SetupDiEnumDeviceInfo(devInfo.Get(), i, &devInfoData)) {
+			RegKeyScopedHandle hDevRegKey(SetupDiOpenDevRegKey(devInfo.Get(), &devInfoData,
+			                              DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ));
 
-			if (!hDevRegKey || (hDevRegKey == INVALID_HANDLE_VALUE)) {
+			if (!hDevRegKey) {
 				continue;
 			}
 
-			bRes = GetMonitorSizeFromEDID(hDevRegKey, WidthMm, HeightMm);
+			bRes = GetMonitorSizeFromEDID(hDevRegKey.Get(), WidthMm, HeightMm);
 
-			RegCloseKey(hDevRegKey);
 		}
 	}
-	SetupDiDestroyDeviceInfoList(devInfo);
 	return bRes;
 }
 
