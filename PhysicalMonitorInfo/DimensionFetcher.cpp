@@ -23,6 +23,7 @@
 // Internal Includes
 #include "DimensionFetcher.h"
 #include "ScopedHandle/ScopedHandle.h"
+#include "WindowsStructTools.h"
 
 // Library/third-party includes
 #include <atlstr.h>
@@ -86,8 +87,7 @@ bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm
 
 	for (ULONG i = 0; ERROR_NO_MORE_ITEMS != GetLastError(); ++i) {
 		SP_DEVINFO_DATA devInfoData;
-		memset(&devInfoData, 0, sizeof(devInfoData));
-		devInfoData.cbSize = sizeof(devInfoData);
+		initWinSizedStruct(devInfoData);
 
 		if (SetupDiEnumDeviceInfo(devInfo, i, &devInfoData)) {
 			HKEY hDevRegKey = SetupDiOpenDevRegKey(devInfo, &devInfoData,
@@ -109,15 +109,14 @@ bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm
 
 bool GetSizeForMonitorNumber(int id, CString & associatedDeviceID, short& WidthMm, short& HeightMm) {
 	DISPLAY_DEVICE dd;
-	dd.cb = sizeof(dd);
+	initWinSizedStruct(dd);
 	DWORD dev = 0; // device index
 
 	CString DeviceID;
 	bool bFoundDevice = false;
 	while (EnumDisplayDevices(0, dev, &dd, 0) && !bFoundDevice) {
 		DISPLAY_DEVICE ddMon;
-		ZeroMemory(&ddMon, sizeof(ddMon));
-		ddMon.cb = sizeof(ddMon);
+		initWinSizedStruct(ddMon);
 		DWORD devMon = 0;
 
 		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0) && !bFoundDevice) {
@@ -132,12 +131,10 @@ bool GetSizeForMonitorNumber(int id, CString & associatedDeviceID, short& WidthM
 			}
 			devMon++;
 
-			ZeroMemory(&ddMon, sizeof(ddMon));
-			ddMon.cb = sizeof(ddMon);
+			initWinSizedStruct(ddMon);
 		}
 
-		ZeroMemory(&dd, sizeof(dd));
-		dd.cb = sizeof(dd);
+		initWinSizedStruct(dd);
 		dev++;
 	}
 	return bFoundDevice;
