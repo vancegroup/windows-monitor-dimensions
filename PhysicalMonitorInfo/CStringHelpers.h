@@ -39,6 +39,18 @@ namespace {
 		str.ReleaseBuffer();
 		return os;
 	}
+
+	inline std::wostream * lookupEquivalent(std::ostream & os) {
+		std::wostream * widestream = NULL;
+		if (&os == &static_cast<std::ostream&>(std::cout)) {
+			widestream = &std::wcout;
+		} else if (&os == &static_cast<std::ostream&>(std::cerr)) {
+			widestream = &std::wcerr;
+		} else if (&os == &static_cast<std::ostream&>(std::clog)) {
+			widestream = &std::wclog;
+		}
+		return widestream;
+	}
 }
 
 template<class StringTraits>
@@ -53,14 +65,8 @@ inline std::wostream & operator<<(std::wostream & os, CStringT<wchar_t, StringTr
 
 template<class StringTraits>
 inline std::wostream & operator<<(std::ostream & os, CStringT<wchar_t, StringTraits> & str) {
-	std::wostream * widestream = NULL;
-	if (&os == &static_cast<std::ostream&>(std::cout)) {
-		widestream = &std::wcout;
-	} else if (&os == &static_cast<std::ostream&>(std::cerr)) {
-		widestream = &std::wcerr;
-	} else if (&os == &static_cast<std::ostream&>(std::clog)) {
-		widestream = &std::wclog;
-	} else {
+	std::wostream * widestream = lookupEquivalent(os);
+	if (!widestream) {
 		throw std::logic_error("Trying to stream a wide CString to a narrow stream, and it's not a built-in one that we could find the equivalent of!");
 	}
 	return output<std::wostream>(*widestream, str);
