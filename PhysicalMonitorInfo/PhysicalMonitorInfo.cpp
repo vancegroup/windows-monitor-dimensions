@@ -10,6 +10,10 @@
 #include <iostream>
 
 int _tmain(int argc, _TCHAR* argv[]) {
+	std::cout << "Monitor names:" << std::endl;
+	dumpMonitorNames();
+	std::cout << std::endl;
+
 	short WidthMm, HeightMm;
 	CString devID;
 	int monitorNum = 1;

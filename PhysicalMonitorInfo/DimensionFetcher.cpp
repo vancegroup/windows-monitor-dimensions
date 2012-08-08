@@ -25,6 +25,7 @@
 #include "ScopedHandle/ScopedHandle.h"
 #include "ScopedHandle/ScopedHandleSetupAPI.h"
 #include "WindowsStructTools.h"
+#include "CStringHelpers.h"
 
 // Library/third-party includes
 #include <atlstr.h>
@@ -66,6 +67,7 @@ namespace {
 
 		return false; // EDID not found
 	}
+
 }
 
 bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm) {
@@ -103,6 +105,43 @@ bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm
 	return bRes;
 }
 
+
+template<typename T>
+inline void ForEachMonitor(T op) {
+	DISPLAY_DEVICE dd;
+	initWinSizedStruct(dd);
+	DWORD dev = 0; // device index
+
+	CString DeviceID;
+	while (EnumDisplayDevices(0, dev, &dd, 0)) {
+		DISPLAY_DEVICE ddMon;
+		initWinSizedStruct(ddMon);
+		DWORD devMon = 0;
+
+		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0)) {
+			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
+			        !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)) {
+				DeviceID.Format(L"%s", ddMon.DeviceID);
+				DeviceID = DeviceID.Mid(8, DeviceID.Find(L"\\", 9) - 8);
+				op(ddMon, DeviceID);
+			}
+			devMon++;
+			initWinSizedStruct(ddMon);
+		}
+
+		initWinSizedStruct(dd);
+		dev++;
+	}
+
+}
+namespace {
+	void dumpName(DISPLAY_DEVICE &, CString & id) {
+		std::cout << id << std::endl;
+	}
+}
+void dumpMonitorNames() {
+	ForEachMonitor(&dumpName);
+}
 
 bool GetSizeForMonitorNumber(int id, CString & associatedDeviceID, short& WidthMm, short& HeightMm) {
 	DISPLAY_DEVICE dd;

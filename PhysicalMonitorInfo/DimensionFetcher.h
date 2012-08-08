@@ -33,6 +33,8 @@
 // Standard includes
 // - none
 
+void dumpMonitorNames();
+
 /** @brief Look up physical dimensions of a monitor, given its device ID string.
 	@param[in] TargetDevID the device ID string associated with a monitor.
 	@param[out] WidthMm the monitor physical width in millimeters
