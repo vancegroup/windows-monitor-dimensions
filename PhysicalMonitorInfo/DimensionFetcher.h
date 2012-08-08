@@ -35,26 +35,26 @@
 
 void dumpMonitorNames();
 
-/** @brief Look up physical dimensions of a monitor, given its device ID string.
-	@param[in] TargetDevID the device ID string associated with a monitor.
+/** @brief Look up physical dimensions of a monitor, given its hardware ID string.
+	@param[in] TargetHardwareID the hardware ID string associated with a monitor.
 	@param[out] WidthMm the monitor physical width in millimeters
 	@param[out] HeightMm the monitor physical height in millimeters
 	@return true if lookup successful
 */
-bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm);
+bool GetSizeForHardwareID(const CString& TargetHardwareID, short& WidthMm, short& HeightMm);
 
 /** @brief Look up device ID string and physical dimensions of a monitor, given its number.
 
 	Internally enumerates active monitors to count as display properties does, in order
-	to lookup the device ID string and call GetSizeForDevID.
+	to lookup the hardware ID string and call GetSizeForHardwareID.
 
 	@param[in] id monitor number, as used by Display Properties > Settings
-	@param[out] associatedDeviceID the device ID string associated with that monitor.
+	@param[out] associatedHardwareID the hardware ID string associated with that monitor.
 	@param[out] WidthMm the monitor physical width in millimeters
 	@param[out] HeightMm the monitor physical height in millimeters
 	@return true if lookup successful
 */
-bool GetSizeForMonitorNumber(int id, CString & associatedDeviceID, short& WidthMm, short& HeightMm);
+bool GetSizeForMonitorNumber(int id, CString & associatedHardwareID, short& WidthMm, short& HeightMm);
 
 #endif // INCLUDED_DimensionFetcher_h_GUID_FF784CE8_222C_4EA7_77CE_A49EA6E175C8
 

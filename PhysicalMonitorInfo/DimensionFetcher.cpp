@@ -59,7 +59,30 @@ namespace {
 	}
 }
 
-bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm) {
+/// Get a hardware ID to link DISPLAY_DEVICE with DEVINFO_DATA
+CString getHardwareID(HDEVINFO devInfo, SP_DEVINFO_DATA & devInfoData) {
+	TCHAR uniID[123];
+	if (SetupDiGetDeviceRegistryProperty(
+	            devInfo,
+	            &devInfoData,
+	            SPDRP_HARDWAREID,//SPDRP_UI_NUMBER,
+	            NULL,
+	            (PBYTE)(&uniID),
+	            sizeof(uniID),
+	            NULL)) {
+		return charsToCString(uniID);
+	} else {
+		return CString();
+	}
+}
+
+/// Get a hardware ID to link DISPLAY_DEVICE with DEVINFO_DATA
+CString getHardwareID(DISPLAY_DEVICE const& dd) {
+	CString hwid = charsToCString(dd.DeviceID);
+	return hwid.Mid(0, hwid.Find('\\', sizeof("MONITOR\\")));
+}
+
+bool GetSizeForHardwareID(const CString& TargetHardwareID, short& WidthMm, short& HeightMm) {
 	DevInfoScopedHandle devInfo(SetupDiGetClassDevsEx(
 	                                &GUID_CLASS_MONITOR, //class GUID
 	                                NULL, //enumerator
@@ -86,11 +109,8 @@ bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm
 			if (!hDevRegKey) {
 				continue;
 			}
-
-			bRes = GetMonitorSizeFromEDID(hDevRegKey.Get(), WidthMm, HeightMm);
-			if (bRes) {
-				std::cout << i << std::endl;
-				std::cout << WidthMm << '\t' << HeightMm << std::endl;
+			if (getHardwareID(devInfo.Get(), devInfoData) == TargetHardwareID) {
+				bRes = GetMonitorSizeFromEDID(hDevRegKey.Get(), WidthMm, HeightMm);
 			}
 		}
 	}
@@ -131,7 +151,22 @@ namespace {
 		return DeviceID;
 	}
 	void dumpName(DISPLAY_DEVICE & dd) {
-		std::wcout << getShortDeviceID(dd) << L"\t" << charsToCString(dd.DeviceKey) << L"\t" << charsToCString(dd.DeviceName) <<  std::endl;
+		std::wcout << getHardwareID(dd) << std::endl;
+		/*
+		int nSpaceCount = 4;
+		std::wcout <<L"    Device Name: " <<  charsToCString(dd.DeviceName) << std::endl;
+		std::wcout <<L"    Device String: " <<  charsToCString(dd.DeviceString) << std::endl;
+		printf("%*sState Flags: %x\n", nSpaceCount, "", dd.StateFlags );
+		std::wcout <<L"    DeviceID: " <<  charsToCString(dd.DeviceID) << std::endl;
+		std::wcout <<L"    DeviceKey: ..." <<  charsToCString(dd.DeviceKey+42) << std::endl;*/
+	}
+	void dumpDisplay(DISPLAY_DEVICE & dd) {
+		int nSpaceCount = 4;
+		std::wcout << L"    Device Name: " <<  charsToCString(dd.DeviceName) << std::endl;
+		std::wcout << L"    Device String: " <<  charsToCString(dd.DeviceString) << std::endl;
+		printf("%*sState Flags: %x\n", nSpaceCount, "", dd.StateFlags);
+		std::wcout << L"    DeviceID: " <<  charsToCString(dd.DeviceID) << std::endl;
+		std::wcout << L"    DeviceKey: ..." <<  charsToCString(dd.DeviceKey + 42) << std::endl;
 	}
 }
 
@@ -139,28 +174,31 @@ void dumpMonitorNames() {
 	ForEachMonitor(&dumpName);
 }
 
-bool GetSizeForMonitorNumber(int id, CString & associatedDeviceID, short& WidthMm, short& HeightMm) {
+bool GetSizeForMonitorNumber(int id, CString & associatedHardwareID, short& WidthMm, short& HeightMm) {
 	DISPLAY_DEVICE dd;
 	initWinSizedStruct(dd);
 	DWORD dev = 0; // device index
 
 	CString DeviceID;
 	bool bFoundDevice = false;
-	while (EnumDisplayDevices(0, dev, &dd, 0) && !bFoundDevice) {
+	while (EnumDisplayDevices(0, dev, &dd, 0) /*&& !bFoundDevice*/) {
 		DISPLAY_DEVICE ddMon;
 		initWinSizedStruct(ddMon);
 		DWORD devMon = 0;
-
-		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0) && !bFoundDevice) {
+		std::wcout << L"Adaptor name: " << charsToCString(dd.DeviceString) << std::endl;
+		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0) /*&& !bFoundDevice*/) {
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
 			        !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)) {
 				DeviceID.Format(L"%s", ddMon.DeviceID);
 				DeviceID = DeviceID.Mid(8, DeviceID.Find(L"\\", 9) - 8);
-				bFoundDevice = GetSizeForDevID(DeviceID, WidthMm, HeightMm);
+				bFoundDevice = GetSizeForHardwareID(getHardwareID(ddMon), WidthMm, HeightMm);
 				if (bFoundDevice) {
-					associatedDeviceID = DeviceID;
+					associatedHardwareID = getHardwareID(ddMon);
 				}
 			}
+			std::cout << "dev: " << dev << "\tdevMon: " << devMon << std::endl;
+			std::wcout << L"Monitor name: " << charsToCString(dd.DeviceString) << std::endl;
+			std::wcout << getHardwareID(ddMon) << std::endl << std::endl;
 			devMon++;
 
 			initWinSizedStruct(ddMon);
