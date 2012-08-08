@@ -7,6 +7,9 @@
 #include <SetupApi.h>
 #pragma comment(lib, "setupapi.lib")
 
+
+#include <iostream>
+
 #define NAME_SIZE 128
 
 const GUID GUID_CLASS_MONITOR = {0x4d36e96e, 0xe325, 0x11ce, 0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18};
@@ -117,5 +120,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		dev++;
 	}
 
+	std::cout << WidthMm << std::endl;
+	std::cout << HeightMm << std::endl;
 	return 0;
 }
