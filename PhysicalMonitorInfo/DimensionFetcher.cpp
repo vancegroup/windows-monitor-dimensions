@@ -110,9 +110,7 @@ inline void ForEachMonitor(T op) {
 		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0)) {
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
 			        !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)) {
-				DeviceID.Format(L"%s", ddMon.DeviceID);
-				DeviceID = DeviceID.Mid(8, DeviceID.Find(L"\\", 9) - 8);
-				op(ddMon, DeviceID);
+				op(ddMon);
 			}
 			devMon++;
 			initWinSizedStruct(ddMon);
@@ -124,10 +122,16 @@ inline void ForEachMonitor(T op) {
 
 }
 namespace {
-	void dumpName(DISPLAY_DEVICE &, CString & id) {
-		std::cout << id << std::endl;
+	inline CString getShortDeviceID(DISPLAY_DEVICE & ddMon) {
+		CString DeviceID = charsToCString(ddMon.DeviceID);
+		DeviceID = DeviceID.Mid(8, DeviceID.Find(L"\\", 9) - 8);
+		return DeviceID;
+	}
+	void dumpName(DISPLAY_DEVICE & dd) {
+		std::wcout << getShortDeviceID(dd) << L"\t" << charsToCString(dd.DeviceKey) << L"\t" << charsToCString(dd.DeviceName) <<  std::endl;
 	}
 }
+
 void dumpMonitorNames() {
 	ForEachMonitor(&dumpName);
 }
