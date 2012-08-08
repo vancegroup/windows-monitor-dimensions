@@ -196,6 +196,10 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<File
+				RelativePath=".\windowsstructtools.h"
+				>
+			</File>
 			<Filter
 				Name="ScopedHandle"
 				>
