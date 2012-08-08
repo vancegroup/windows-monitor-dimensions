@@ -33,10 +33,18 @@
 #include <stdexcept>
 
 namespace {
+	/*
 	template<class StreamType, class StringType>
 	inline StreamType & output(StreamType & os, StringType & str) {
 		os << str.GetBuffer(str.GetLength());
 		str.ReleaseBuffer();
+		return os;
+	}
+	*/
+
+	template<class StreamType, class StringType>
+	inline StreamType & output(StreamType & os, StringType const& str) {
+		os << str.GetString();
 		return os;
 	}
 
@@ -54,17 +62,17 @@ namespace {
 }
 
 template<class StringTraits>
-inline std::ostream & operator<<(std::ostream & os, CStringT<char, StringTraits> & str) {
+inline std::ostream & operator<<(std::ostream & os, CStringT<char, StringTraits> const& str) {
 	return output<std::ostream>(os, str);
 }
 
 template<class StringTraits>
-inline std::wostream & operator<<(std::wostream & os, CStringT<wchar_t, StringTraits> & str) {
+inline std::wostream & operator<<(std::wostream & os, CStringT<wchar_t, StringTraits> const& str) {
 	return output<std::wostream>(os, str);
 }
 
 template<class StringTraits>
-inline std::wostream & operator<<(std::ostream & os, CStringT<wchar_t, StringTraits> & str) {
+inline std::wostream & operator<<(std::ostream & os, CStringT<wchar_t, StringTraits> const& str) {
 	std::wostream * widestream = lookupEquivalent(os);
 	if (!widestream) {
 		throw std::logic_error("Trying to stream a wide CString to a narrow stream, and it's not a built-in one that we could find the equivalent of!");
