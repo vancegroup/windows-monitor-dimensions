@@ -72,5 +72,13 @@ inline std::wostream & operator<<(std::ostream & os, CStringT<wchar_t, StringTra
 	return output<std::wostream>(*widestream, str);
 }
 
+
+template<typename T>
+inline CString charsToCString(T chars) {
+	CString ret;
+	ret.Format(L"%s", chars);
+	return ret;
+}
+
 #endif // INCLUDED_CStringHelpers_h_GUID_7DB5BF31_5D98_4D9C_B9DE_D6AC444C9F81
 
