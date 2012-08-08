@@ -88,7 +88,10 @@ bool GetSizeForDevID(const CString& TargetDevID, short& WidthMm, short& HeightMm
 			}
 
 			bRes = GetMonitorSizeFromEDID(hDevRegKey.Get(), WidthMm, HeightMm);
-
+			if (bRes) {
+				std::cout << i << std::endl;
+				std::cout << WidthMm << '\t' << HeightMm << std::endl;
+			}
 		}
 	}
 	return bRes;
