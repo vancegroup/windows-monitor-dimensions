@@ -196,6 +196,14 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<Filter
+				Name="ScopedHandle"
+				>
+				<File
+					RelativePath=".\ScopedHandle\ScopedHandle.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

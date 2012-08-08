@@ -1,0 +1,4 @@
+http://www.codeproject.com/Articles/95610/Scoped-Handle-Smart-pointer-for-Windows-objects
+
+Licence 	CPOL
+First Posted 	21 Jul 2010

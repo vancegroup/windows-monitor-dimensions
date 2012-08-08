@@ -22,6 +22,7 @@
 
 // Internal Includes
 #include "DimensionFetcher.h"
+#include "ScopedHandle/ScopedHandle.h"
 
 // Library/third-party includes
 #include <atlstr.h>
