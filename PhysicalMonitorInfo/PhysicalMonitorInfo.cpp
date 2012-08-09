@@ -10,15 +10,9 @@
 #include <iostream>
 
 int _tmain(int argc, _TCHAR* argv[]) {
-	std::cout << "Monitor names:" << std::endl;
-	dumpMonitorNames();
-	std::cout << std::endl;
-
 	short WidthMm, HeightMm;
-	CString devID;
 	int monitorNum = 1;
-	if (GetSizeForMonitorNumber(monitorNum, devID, WidthMm, HeightMm)) {
-		std::cout << devID << std::endl;
+	if (GetSizeForMonitorNumber(monitorNum, WidthMm, HeightMm)) {
 		std::cout << WidthMm << std::endl;
 		std::cout << HeightMm << std::endl;
 		return 0;

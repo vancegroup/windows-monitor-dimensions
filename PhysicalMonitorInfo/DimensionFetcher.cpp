@@ -57,30 +57,31 @@ namespace {
 
 		return true; // valid EDID found
 	}
-}
+	/// Get a hardware ID to link DISPLAY_DEVICE with DEVINFO_DATA
+	inline CString getHardwareID(HDEVINFO devInfo, SP_DEVINFO_DATA & devInfoData) {
+		TCHAR uniID[123];
+		if (SetupDiGetDeviceRegistryProperty(
+					devInfo,
+					&devInfoData,
+					SPDRP_HARDWAREID,//SPDRP_UI_NUMBER,
+					NULL,
+					(PBYTE)(&uniID),
+					sizeof(uniID),
+					NULL)) {
+			return charsToCString(uniID);
+		} else {
+			return CString();
+		}
+	}
 
-/// Get a hardware ID to link DISPLAY_DEVICE with DEVINFO_DATA
-CString getHardwareID(HDEVINFO devInfo, SP_DEVINFO_DATA & devInfoData) {
-	TCHAR uniID[123];
-	if (SetupDiGetDeviceRegistryProperty(
-	            devInfo,
-	            &devInfoData,
-	            SPDRP_HARDWAREID,//SPDRP_UI_NUMBER,
-	            NULL,
-	            (PBYTE)(&uniID),
-	            sizeof(uniID),
-	            NULL)) {
-		return charsToCString(uniID);
-	} else {
-		return CString();
+	/// Get a hardware ID to link DISPLAY_DEVICE with DEVINFO_DATA
+	inline CString getHardwareID(DISPLAY_DEVICE const& dd) {
+		CString hwid = charsToCString(dd.DeviceID);
+		return hwid.Mid(0, hwid.Find('\\', sizeof("MONITOR\\")));
 	}
 }
 
-/// Get a hardware ID to link DISPLAY_DEVICE with DEVINFO_DATA
-CString getHardwareID(DISPLAY_DEVICE const& dd) {
-	CString hwid = charsToCString(dd.DeviceID);
-	return hwid.Mid(0, hwid.Find('\\', sizeof("MONITOR\\")));
-}
+
 
 bool GetSizeForHardwareID(const CString& TargetHardwareID, short& WidthMm, short& HeightMm) {
 	DevInfoScopedHandle devInfo(SetupDiGetClassDevsEx(
@@ -119,16 +120,16 @@ bool GetSizeForHardwareID(const CString& TargetHardwareID, short& WidthMm, short
 
 
 template<typename T>
-inline void ForEachMonitor(T op) {
+inline void forEachActiveRealMonitor(T op) {
 	DISPLAY_DEVICE dd;
 	initWinSizedStruct(dd);
-	DWORD dev = 0; // device index
+	DWORD dev = 0; // adaptor index
 
 	CString DeviceID;
 	while (EnumDisplayDevices(0, dev, &dd, 0)) {
 		DISPLAY_DEVICE ddMon;
 		initWinSizedStruct(ddMon);
-		DWORD devMon = 0;
+		DWORD devMon = 0; // index of device on this adapter
 
 		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0)) {
 			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
@@ -142,24 +143,63 @@ inline void ForEachMonitor(T op) {
 		initWinSizedStruct(dd);
 		dev++;
 	}
-
 }
+
+namespace {
+	struct LookupMonitorFunctor {
+		/*
+		LookupMonitorFunctor(int desired, CString & hardwareID)
+			: target(desired)
+			, num(0)
+			, found(false)
+			, hwID(hardwareID) {}
+		*/
+		void operator()(DISPLAY_DEVICE & dd) {
+			num++;
+			std::wcout << num << L"    Hardware ID: " <<  getHardwareID(dd) << std::endl;
+			if (target == num) {
+				std::cout << "Found!" << std::endl;
+				found = true;
+				hwID = getHardwareID(dd);
+			}
+		}
+		int target;
+		int num;
+		bool & found;
+		CString & hwID;
+	};
+}
+
+bool findHardwareIDForMonitorNumber(int id, CString & hardwareID) {
+	bool found = false;
+	LookupMonitorFunctor f = { id, 0, found,  hardwareID };
+	forEachActiveRealMonitor(f);
+	return found;
+}
+
+bool GetSizeForMonitorNumber(int id, short& WidthMm, short& HeightMm) {
+	CString hardwareID;
+	if(findHardwareIDForMonitorNumber(id, hardwareID)) {
+		return GetSizeForHardwareID(hardwareID, WidthMm, HeightMm);
+	} else {
+		std::cerr << "Couldn't find hardware ID" << std::endl;
+		return false;
+	}
+}
+
+
+
 namespace {
 	inline CString getShortDeviceID(DISPLAY_DEVICE & ddMon) {
 		CString DeviceID = charsToCString(ddMon.DeviceID);
 		DeviceID = DeviceID.Mid(8, DeviceID.Find(L"\\", 9) - 8);
 		return DeviceID;
 	}
+
 	void dumpName(DISPLAY_DEVICE & dd) {
 		std::wcout << getHardwareID(dd) << std::endl;
-		/*
-		int nSpaceCount = 4;
-		std::wcout <<L"    Device Name: " <<  charsToCString(dd.DeviceName) << std::endl;
-		std::wcout <<L"    Device String: " <<  charsToCString(dd.DeviceString) << std::endl;
-		printf("%*sState Flags: %x\n", nSpaceCount, "", dd.StateFlags );
-		std::wcout <<L"    DeviceID: " <<  charsToCString(dd.DeviceID) << std::endl;
-		std::wcout <<L"    DeviceKey: ..." <<  charsToCString(dd.DeviceKey+42) << std::endl;*/
 	}
+
 	void dumpDisplay(DISPLAY_DEVICE & dd) {
 		int nSpaceCount = 4;
 		std::wcout << L"    Device Name: " <<  charsToCString(dd.DeviceName) << std::endl;
@@ -171,41 +211,5 @@ namespace {
 }
 
 void dumpMonitorNames() {
-	ForEachMonitor(&dumpName);
-}
-
-bool GetSizeForMonitorNumber(int id, CString & associatedHardwareID, short& WidthMm, short& HeightMm) {
-	DISPLAY_DEVICE dd;
-	initWinSizedStruct(dd);
-	DWORD dev = 0; // device index
-
-	CString DeviceID;
-	bool bFoundDevice = false;
-	while (EnumDisplayDevices(0, dev, &dd, 0) /*&& !bFoundDevice*/) {
-		DISPLAY_DEVICE ddMon;
-		initWinSizedStruct(ddMon);
-		DWORD devMon = 0;
-		std::wcout << L"Adaptor name: " << charsToCString(dd.DeviceString) << std::endl;
-		while (EnumDisplayDevices(dd.DeviceName, devMon, &ddMon, 0) /*&& !bFoundDevice*/) {
-			if (ddMon.StateFlags & DISPLAY_DEVICE_ACTIVE &&
-			        !(ddMon.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)) {
-				DeviceID.Format(L"%s", ddMon.DeviceID);
-				DeviceID = DeviceID.Mid(8, DeviceID.Find(L"\\", 9) - 8);
-				bFoundDevice = GetSizeForHardwareID(getHardwareID(ddMon), WidthMm, HeightMm);
-				if (bFoundDevice) {
-					associatedHardwareID = getHardwareID(ddMon);
-				}
-			}
-			std::cout << "dev: " << dev << "\tdevMon: " << devMon << std::endl;
-			std::wcout << L"Monitor name: " << charsToCString(dd.DeviceString) << std::endl;
-			std::wcout << getHardwareID(ddMon) << std::endl << std::endl;
-			devMon++;
-
-			initWinSizedStruct(ddMon);
-		}
-
-		initWinSizedStruct(dd);
-		dev++;
-	}
-	return bFoundDevice;
+	forEachActiveRealMonitor(&dumpName);
 }
